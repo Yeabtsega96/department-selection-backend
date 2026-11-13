@@ -6,7 +6,7 @@ import prisma from "./config/prisma.js";
 
 const PORT = Number(process.env.PORT) || 5000;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log("----------------------------------");
   console.log("Department Selection API");
   console.log(`Server running: http://localhost:${PORT}`);
