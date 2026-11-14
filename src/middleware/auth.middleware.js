@@ -3,7 +3,7 @@ import { auth } from "../config/auth.js";
 
 export async function requireAuth(req, res, next) {
   try {
-    const session = await auth.getSession({
+    const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });
 

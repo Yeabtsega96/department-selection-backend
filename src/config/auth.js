@@ -1,7 +1,8 @@
-
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { username } from "better-auth/plugins";
+import { username, admin as adminPlugin } from "better-auth/plugins";
+
+import { ac, roles } from "./auth-permissions.js";
 
 import prisma from "./prisma.js";
 
@@ -12,6 +13,8 @@ export const auth = betterAuth({
 
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
+
+  trustedOrigins: [process.env.CLIENT_URL || "http://localhost:5173"],
 
   emailAndPassword: {
     enabled: true,
@@ -26,17 +29,16 @@ export const auth = betterAuth({
       immutableUsername: true,
       displayUsername: false,
     }),
+
+    adminPlugin({
+      ac,
+      roles,
+      defaultRole: "STUDENT",
+    }),
   ],
 
   user: {
     additionalFields: {
-      role: {
-        type: "string",
-        required: true,
-        defaultValue: "STUDENT",
-        input: false,
-      },
-
       isActive: {
         type: "boolean",
         required: true,
