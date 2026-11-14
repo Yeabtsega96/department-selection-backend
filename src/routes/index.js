@@ -5,6 +5,18 @@ import deanRouter from "../modules/dean/dean.routes.js";
 
 const router = Router();
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Check API health
+ *     description: Check whether the Department Selection API is running.
+ *     tags:
+ *       - System
+ *     responses:
+ *       200:
+ *         description: API is healthy.
+ */
 router.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -15,7 +27,7 @@ router.get("/health", (req, res) => {
 
 router.use("/account", authRouter); 
 router.use("/admin", adminRouter);
-
+  
 router.use("/dean", deanRouter);
 
 

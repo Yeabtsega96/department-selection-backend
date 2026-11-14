@@ -10,6 +10,9 @@ import apiRouter from "./routes/index.js";
 import { notFound } from "./middleware/not-found.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger.js";
+
 const app = express();
 
 // Hide Express information
@@ -51,6 +54,7 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // API routes
 app.use("/api", apiRouter);
 

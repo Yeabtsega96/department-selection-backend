@@ -6,7 +6,20 @@ import { requireRole } from "../../middleware/role.middleware.js";
 
 const router = Router();
 
-// Get currently authenticated user
+/**
+ * @swagger
+ * /api/account/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     description: Returns the authenticated user's profile and session information.
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: User and session information retrieved successfully.
+ *       401:
+ *         description: Authentication required.
+ */
 router.get("/me", requireAuth, (req, res) => {
   res.status(200).json({
     success: true,
@@ -23,7 +36,22 @@ router.get("/me", requireAuth, (req, res) => {
   });
 });
 
-// Admin-only test endpoint
+/**
+ * @swagger
+ * /api/account/admin-test:
+ *   get:
+ *     summary: Test administrator authorization
+ *     description: Allows only authenticated administrators to access this endpoint.
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: Administrator authorization successful.
+ *       401:
+ *         description: Authentication required.
+ *       403:
+ *         description: Administrator permission required.
+ */
 router.get(
   "/admin-test",
   requireAuth,
