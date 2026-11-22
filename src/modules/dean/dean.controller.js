@@ -1,6 +1,7 @@
 import { fromNodeHeaders } from "better-auth/node";
 import { validateCreateDepartmentHead } from "./dean.validation.js";
-import { createDepartmentHead } from "./dean.service.js";
+import { createDepartmentHead, createDepartmentHeadAssignment } from "./dean.service.js";
+import { validateCreateAssignment } from "./department-head-assignment.validation.js"
 
 export async function createDepartmentHeadController(req, res, next) {
   // 1. Validate request body
@@ -36,6 +37,36 @@ export async function createDepartmentHeadController(req, res, next) {
         temporaryPassword,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+
+
+export async function createDepartmentHeadAssignmentController(req, res, next) {
+  const validation = validateCreateAssignment(req.body);
+ 
+  if(!validation.valid) {
+    return res.status(400).json({
+      sucess: false,
+      message: "Validation failed.",
+      errors: validation.errors,
+    })
+  }
+
+  try {
+    const assignment = await createDepartmentHeadAssignment({
+      data: validation.data,
+      assignedBy: req.user.id,
+    })
+
+    return res.status(201).json({
+      success: true,
+      message: "Department Head assigned successfully.",
+      data: assignment,
+    })
   } catch (error) {
     next(error);
   }

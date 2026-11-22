@@ -18,11 +18,15 @@ const options = {
     },
 
     servers: [
-      {
-        url: "http://localhost:5000",
-        description: "Development server",
-      },
-    ],
+  {
+    url: "http://localhost:10000",
+    description: "Development server",
+  },
+  {
+    url: "https://department-selection-backend.onrender.com",
+    description: "Production server (Render)",
+  },
+],
 
     components: {
       securitySchemes: {

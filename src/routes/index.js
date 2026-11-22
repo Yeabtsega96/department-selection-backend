@@ -2,6 +2,8 @@ import { Router } from "express";
 import authRouter from "../modules/auth/auth.routes.js";
 import adminRouter from "../modules/admin/admin.routes.js";
 import deanRouter from "../modules/dean/dean.routes.js";
+import departmentRouter from "../modules/departments/department.routes.js"
+import campusRouter from "../modules/campuses/campus.routes.js"
 
 const router = Router();
 
@@ -25,10 +27,13 @@ router.get("/health", (req, res) => {
   });
 });
 
-router.use("/account", authRouter); 
+router.use("/account", authRouter);
 router.use("/admin", adminRouter);
-  
+
 router.use("/dean", deanRouter);
 
+router.use("/departments", departmentRouter);
+
+router.use("/campuses", campusRouter);
 
 export default router;

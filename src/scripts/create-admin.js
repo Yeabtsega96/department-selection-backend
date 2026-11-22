@@ -15,14 +15,14 @@ const rl = createInterface({
 
 async function createAdmin() {
   try {
-    // Check whether an administrator already exists
-    const existingAdmin = await prisma.user.findFirst({
-      where: { role: "ADMIN" },
-    });
+    // // Check whether an administrator already exists
+    // const existingAdmin = await prisma.user.findFirst({
+    //   where: { role: "ADMIN" },
+    // });
 
-    if (existingAdmin) {
-      throw new Error("An administrator already exists.");
-    }
+    // if (existingAdmin) {
+    //   throw new Error("An administrator already exists.");
+    // }
 
     const name = (await rl.question("Admin name: ")).trim();
     const email = (await rl.question("Admin email: ")).trim().toLowerCase();

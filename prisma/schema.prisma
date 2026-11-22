@@ -265,7 +265,7 @@ model Campus {
   code        String  @unique
   name        String
   location    String?
-  description String?
+  description String? @db.Text
   isActive    Boolean @default(true)
 
   createdAt DateTime @default(now())
@@ -281,10 +281,10 @@ model Department {
   code String @unique
   name String
 
-  description String?
-  vision      String?
-  mission     String?
-  objectives  String?
+  description String? @db.Text
+  vision      String? @db.Text
+  mission     String? @db.Text
+  objectives  String? @db.Text
 
   campusId String
   isActive Boolean @default(true)

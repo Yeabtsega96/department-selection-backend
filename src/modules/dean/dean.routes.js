@@ -2,7 +2,11 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { requireRole } from "../../middleware/role.middleware.js";
-import { createDepartmentHeadController } from "./dean.controller.js";
+
+import {
+  createDepartmentHeadController,
+  createDepartmentHeadAssignmentController,
+} from "./dean.controller.js";
 
 const router = Router();
 
@@ -17,6 +21,8 @@ router.use(requireAuth, requireRole("DEAN"));
  *     description: Allows an authenticated Dean to create a Department Head account.
  *     tags:
  *       - Dean
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       201:
  *         description: Department Head account created successfully.
@@ -28,5 +34,34 @@ router.use(requireAuth, requireRole("DEAN"));
  *         description: Only Deans can perform this action.
  */
 router.post("/department-heads", createDepartmentHeadController);
+
+/**
+ * @swagger
+ * /api/dean/department-head-assignments:
+ *   post:
+ *     summary: Assign a Department Head
+ *     description: Allows an authenticated Dean to assign a Department Head to a department.
+ *     tags:
+ *       - Dean
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Department Head assigned successfully.
+ *       400:
+ *         description: Invalid assignment data.
+ *       401:
+ *         description: Authentication required.
+ *       403:
+ *         description: Only Deans can perform this action.
+ *       404:
+ *         description: Department or Department Head not found.
+ *       409:
+ *         description: Assignment conflict.
+ */
+router.post(
+  "/department-head-assignments",
+  createDepartmentHeadAssignmentController
+);
 
 export default router;
