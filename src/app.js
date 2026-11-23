@@ -58,6 +58,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // API routes
 app.use("/api", apiRouter);
 
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+
 // Handle unknown routes
 app.use(notFound);
 
