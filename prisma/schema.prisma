@@ -34,11 +34,23 @@ model User {
   permissionsRevoked UserPermissionGrant[] @relation("PermissionRevoker")
 
   // Department head assignments
-  departmentHeadAssignments     DepartmentHeadAssignment[] @relation("DepartmentHead")
-  departmentHeadAssignmentsMade DepartmentHeadAssignment[] @relation("DepartmentHeadAssigner")
+  departmentHeadAssignments     DepartmentHeadAssignment[]  @relation("DepartmentHead")
+  departmentHeadAssignmentsMade DepartmentHeadAssignment[]  @relation("DepartmentHeadAssigner")
+  proposedDepartmentConfigs     DepartmentSelectionConfig[] @relation("ConfigProposer")
+
+  approvedDepartmentConfigs DepartmentSelectionConfig[] @relation("ConfigApprover")
+
+  departmentConfigRevisions DepartmentSelectionConfigRevision[] @relation("ConfigRevisionActor")
 
   // Audit relationship
   auditLogs AuditLog[] @relation("AuditLogActor")
+
+  selectionPeriodsCreated SelectionPeriod[]       @relation("SelectionPeriodCreator")
+  gpaRecordsRecorded      StudentAcademicRecord[] @relation("GPARecordRecorder")
+
+  gpaCorrectionsMade StudentAcademicRecordCorrection[] @relation("GPARecordCorrector")
+
+  qualificationsVerified StudentQualification[] @relation("QualificationVerifier")
 
   @@unique([email])
   @@unique([username])
@@ -130,7 +142,9 @@ model StudentProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  region Region @relation(fields: [regionId], references: [id])
+  region          Region                  @relation(fields: [regionId], references: [id])
+  academicRecords StudentAcademicRecord[]
+  qualifications  StudentQualification[]
 
   @@index([regionId])
   @@index([studentStatus])
@@ -294,7 +308,8 @@ model Department {
 
   campus Campus @relation(fields: [campusId], references: [id], onDelete: Restrict)
 
-  headAssignments DepartmentHeadAssignment[]
+  headAssignments  DepartmentHeadAssignment[]
+  selectionConfigs DepartmentSelectionConfig[]
 
   @@index([campusId])
   @@index([isActive])
@@ -342,4 +357,301 @@ enum DepartmentHeadType {
 enum AssignmentStatus {
   ACTIVE
   ENDED
+}
+
+model AcademicYear {
+  id        String             @id @default(cuid())
+  name      String             @unique
+  startDate DateTime
+  endDate   DateTime
+  status    AcademicYearStatus @default(UPCOMING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  selectionPeriods       SelectionPeriod[]
+  studentAcademicRecords StudentAcademicRecord[]
+
+  @@index([status])
+  @@map("academic_year")
+}
+
+enum AcademicYearStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+model StudentGroup {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  selectionPeriods SelectionPeriod[]
+
+  @@map("student_group")
+}
+
+model SelectionPeriod {
+  id             String @id @default(cuid())
+  academicYearId String
+  studentGroupId String
+
+  name        String
+  type        SelectionPeriodType
+  description String?
+
+  status SelectionPeriodStatus @default(DRAFT)
+
+  // Student preference schedule
+  preferenceStartDate DateTime?
+  preferenceEndDate   DateTime?
+
+  // Late preference schedule
+  latePreferenceStartDate DateTime?
+  latePreferenceEndDate   DateTime?
+
+  // Student reconsideration schedule
+  reconsiderationStartDate DateTime?
+  reconsiderationEndDate   DateTime?
+
+  // Selection configuration
+  maxPreferences       Int @default(3)
+  maxPreferenceUpdates Int @default(3)
+
+  // GPA collection required for allocation
+  requiredGpaStage GpaCollectionStage
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  studentGroup StudentGroup @relation(fields: [studentGroupId], references: [id], onDelete: Restrict)
+
+  creator User @relation("SelectionPeriodCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  departmentConfigs DepartmentSelectionConfig[]
+
+  @@index([academicYearId, status])
+  @@index([studentGroupId])
+  @@index([createdBy])
+  @@map("selection_period")
+}
+
+enum SelectionPeriodType {
+  REGULAR
+  ADDITIONAL
+  SPECIAL
+}
+
+enum SelectionPeriodStatus {
+  DRAFT
+  UPCOMING
+  OPEN
+  CLOSED
+  COMPLETED
+  CANCELLED
+}
+
+enum GpaCollectionStage {
+  FIRST_COLLECTION
+  SECOND_COLLECTION
+}
+
+model DepartmentSelectionConfig {
+  id                String @id @default(cuid())
+  selectionPeriodId String
+  departmentId      String
+
+  proposedCapacity Int
+  approvedCapacity Int?
+
+  femaleQuotaPercentage Decimal @default(0) @db.Decimal(5, 2)
+
+  status ConfigApprovalStatus @default(DRAFT)
+
+  proposedBy String
+  approvedBy String?
+  approvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  selectionPeriod SelectionPeriod @relation(fields: [selectionPeriodId], references: [id], onDelete: Restrict)
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  proposer User @relation("ConfigProposer", fields: [proposedBy], references: [id], onDelete: Restrict)
+
+  approver User? @relation("ConfigApprover", fields: [approvedBy], references: [id], onDelete: Restrict)
+
+  revisions               DepartmentSelectionConfigRevision[]
+  eligibilityRequirements DepartmentEligibilityRequirement[]
+
+  @@unique([selectionPeriodId, departmentId])
+  @@index([status])
+  @@map("department_selection_config")
+}
+
+enum ConfigApprovalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model DepartmentSelectionConfigRevision {
+  id       String @id @default(cuid())
+  configId String
+
+  version Int
+
+  proposedCapacity Int
+  approvedCapacity Int?
+
+  femaleQuotaPercentage Decimal @db.Decimal(5, 2)
+
+  eligibilitySnapshot Json
+
+  reason    String?
+  changedBy String
+  createdAt DateTime @default(now())
+
+  config DepartmentSelectionConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+
+  actor User @relation("ConfigRevisionActor", fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@unique([configId, version])
+  @@index([changedBy])
+  @@map("department_selection_config_revision")
+}
+
+model DepartmentEligibilityRequirement {
+  id       String @id @default(cuid())
+  configId String
+
+  requirementGroup  String
+  qualificationType QualificationType
+
+  fieldOfStudy String?
+  matchingRule QualificationMatchingRule
+
+  isMandatory Boolean @default(true)
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  config DepartmentSelectionConfig @relation(fields: [configId], references: [id], onDelete: Restrict)
+
+  @@index([configId])
+  @@map("department_eligibility_requirement")
+}
+
+enum QualificationType {
+  DIPLOMA
+  LEVEL_IV
+  OTHER
+}
+
+enum QualificationMatchingRule {
+  EXACT
+  RELATED
+  ANY
+}
+
+model StudentAcademicRecord {
+  id             String @id @default(cuid())
+  studentId      String
+  academicYearId String
+
+  semester    Semester
+  semesterGPA Decimal  @db.Decimal(4, 2)
+
+  recordedBy String
+  recordedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  recorder User @relation("GPARecordRecorder", fields: [recordedBy], references: [id], onDelete: Restrict)
+
+  corrections StudentAcademicRecordCorrection[]
+
+  @@unique([studentId, academicYearId, semester])
+  @@index([academicYearId, semester])
+  @@index([recordedBy])
+  @@map("student_academic_record")
+}
+
+enum Semester {
+  FIRST_SEMESTER
+  SECOND_SEMESTER
+}
+
+model StudentAcademicRecordCorrection {
+  id               String @id @default(cuid())
+  academicRecordId String
+
+  oldGPA Decimal @db.Decimal(4, 2)
+  newGPA Decimal @db.Decimal(4, 2)
+
+  reason      String
+  correctedBy String
+  correctedAt DateTime @default(now())
+
+  academicRecord StudentAcademicRecord @relation(fields: [academicRecordId], references: [id], onDelete: Restrict)
+
+  corrector User @relation("GPARecordCorrector", fields: [correctedBy], references: [id], onDelete: Restrict)
+
+  @@index([academicRecordId])
+  @@index([correctedBy])
+  @@map("student_academic_record_correction")
+}
+
+
+
+model StudentQualification {
+  id                String   @id @default(cuid())
+  studentId         String
+
+  qualificationType QualificationType
+  title             String
+  fieldOfStudy      String?
+  institution       String?
+  completionYear    Int?
+
+  documentReference String?
+
+  verificationStatus QualificationVerificationStatus @default(PENDING)
+
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId],references: [id],onDelete: Restrict)
+
+  verifier User? @relation("QualificationVerifier",fields: [verifiedBy],references: [id],onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([verificationStatus])
+  @@map("student_qualification")
+}
+
+enum QualificationVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }
