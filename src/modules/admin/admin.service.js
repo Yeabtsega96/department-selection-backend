@@ -1,7 +1,11 @@
-import prisma from "../../config/prisma.js";
 
+import prisma from "../../config/prisma.js";
 import { randomBytes } from "node:crypto";
 import { auth } from "../../config/auth.js";
+
+// ============================================
+// ADMIN DASHBOARD
+// ============================================
 
 export async function getDashboardStats() {
   const [
@@ -46,10 +50,13 @@ export async function getDashboardStats() {
   };
 }
 
+// ============================================
+// CREATE UNIVERSITY USER
+// ============================================
+
 export async function createUniversityUser({ data, headers }) {
   const { name, email, role, employeeId } = data;
 
-  // Generate a unique username
   const usernameBase =
     name
       .normalize("NFKD")
@@ -60,10 +67,8 @@ export async function createUniversityUser({ data, headers }) {
 
   const username = `${usernameBase}${randomBytes(3).toString("hex")}`;
 
-  // Generate a temporary password
   const temporaryPassword = randomBytes(18).toString("base64url");
 
-  // Create the account through Better Auth
   const result = await auth.api.createUser({
     body: {
       name,
@@ -81,7 +86,6 @@ export async function createUniversityUser({ data, headers }) {
 
   const createdUser = result.user ?? result;
 
-  // Assign role and create employee profile
   const user = await prisma.$transaction(async (tx) => {
     const updatedUser = await tx.user.update({
       where: { id: createdUser.id },
@@ -104,6 +108,10 @@ export async function createUniversityUser({ data, headers }) {
   };
 }
 
+// ============================================
+// GET ALL USERS
+// ============================================
+
 export async function getAllUsers({
   page = 1,
   limit = 10,
@@ -114,7 +122,6 @@ export async function getAllUsers({
 }) {
   const skip = (page - 1) * limit;
 
-  // Build dynamic filters
   const where = {};
   const roleFilters = [];
 
@@ -125,7 +132,7 @@ export async function getAllUsers({
   if (excludeRole) {
     roleFilters.push({
       role: {
-        not: excludeRole,
+        not: excludeRole.toUpperCase(),
       },
     });
   }
@@ -140,25 +147,12 @@ export async function getAllUsers({
 
   if (search) {
     where.OR = [
-      {
-        name: {
-          contains: search,
-        },
-      },
-      {
-        email: {
-          contains: search,
-        },
-      },
-      {
-        username: {
-          contains: search,
-        },
-      },
+      { name: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { username: { contains: search, mode: "insensitive" } },
     ];
   }
 
-  // Fetch users and total count
   const [users, totalUsers] = await prisma.$transaction([
     prisma.user.findMany({
       where,
@@ -194,7 +188,10 @@ export async function getAllUsers({
   };
 }
 
-// ADMIN: Get user by ID
+// ============================================
+// GET USER BY ID
+// ============================================
+
 export async function getUserById(id) {
   const user = await prisma.user.findUnique({
     where: { id },
@@ -230,6 +227,10 @@ export async function getUserById(id) {
   return user;
 }
 
+// ============================================
+// UPDATE USER
+// ============================================
+
 export async function updateUser(id, data) {
   const existingUser = await prisma.user.findUnique({
     where: { id },
@@ -244,9 +245,7 @@ export async function updateUser(id, data) {
     throw error;
   }
 
-  // Only staff accounts can have EmployeeProfile
   const staffRoles = ["DEAN", "COORDINATOR", "DEPARTMENT_HEAD"];
-
   const isStaff = staffRoles.includes(existingUser.role);
 
   if (
@@ -257,15 +256,22 @@ export async function updateUser(id, data) {
       data.office !== undefined)
   ) {
     const error = new Error(
-      "Employee profile fields can only be updated for staff accounts.",
+      "Employee profile fields can only be updated for staff accounts."
     );
     error.statusCode = 400;
     throw error;
   }
 
-  const { name, email, username, employeeId, phone, jobTitle, office } = data;
+  const {
+    name,
+    email,
+    username,
+    employeeId,
+    phone,
+    jobTitle,
+    office,
+  } = data;
 
-  // Separate user fields from employee profile fields
   const userData = {};
 
   if (name !== undefined) userData.name = name;
@@ -279,7 +285,6 @@ export async function updateUser(id, data) {
   if (jobTitle !== undefined) employeeData.jobTitle = jobTitle;
   if (office !== undefined) employeeData.office = office;
 
-  // Update user and employee profile together
   return prisma.$transaction(async (tx) => {
     if (Object.keys(userData).length > 0) {
       await tx.user.update({
@@ -288,30 +293,33 @@ export async function updateUser(id, data) {
       });
     }
 
-    if (isStaff && Object.keys(employeeData).length > 0) {
-      await tx.employeeProfile.update({
-        where: { userId: id },
-        data: employeeData,
-      });
-    } else {
-      // A missing profile requires employeeId
-      if (!employeeId) {
-        const error = new Error(
-          "Employee ID is required to create the employee profile.",
-        );
-        error.status = 400;
-        throw error;
-      }
+    if (isStaff) {
+      if (existingUser.employeeProfile) {
+        if (Object.keys(employeeData).length > 0) {
+          await tx.employeeProfile.update({
+            where: { userId: id },
+            data: employeeData,
+          });
+        }
+      } else {
+        if (!employeeId) {
+          const error = new Error(
+            "Employee ID is required to create the employee profile."
+          );
+          error.statusCode = 400;
+          throw error;
+        }
 
-      await tx.employeeProfile.create({
-        data: {
-          userId: id,
-          employeeId,
-          phone,
-          jobTitle,
-          office,
-        },
-      });
+        await tx.employeeProfile.create({
+          data: {
+            userId: id,
+            employeeId,
+            phone,
+            jobTitle,
+            office,
+          },
+        });
+      }
     }
 
     return tx.user.findUnique({
@@ -338,6 +346,10 @@ export async function updateUser(id, data) {
   });
 }
 
+// ============================================
+// DEACTIVATE USER
+// ============================================
+
 export async function deleteUser(id, currentAdminId) {
   const existingUser = await prisma.user.findUnique({
     where: { id },
@@ -351,21 +363,21 @@ export async function deleteUser(id, currentAdminId) {
 
   if (!existingUser) {
     const error = new Error("User not found.");
-    error.status = 404;
+    error.statusCode = 404;
     throw error;
   }
 
-  // Prevent deleting your own account
   if (id === currentAdminId) {
-    const erorr = new Error("You cannot deactivate your own account.");
+    const error = new Error(
+      "You cannot deactivate your own account."
+    );
     error.statusCode = 400;
-    throw erorr;
+    throw error;
   }
 
-  // Protect other ADMIN accounts
   if (existingUser.role === "ADMIN") {
     const error = new Error(
-      "ADMIN accounts cannot be deactivated through this endpoint.",
+      "ADMIN accounts cannot be deactivated through this endpoint."
     );
     error.statusCode = 403;
     throw error;
@@ -380,6 +392,9 @@ export async function deleteUser(id, currentAdminId) {
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.update({
       where: { id },
+      data: {
+        isActive: false,
+      },
       select: {
         id: true,
         name: true,
@@ -389,7 +404,6 @@ export async function deleteUser(id, currentAdminId) {
       },
     });
 
-    // Revoke all active sessions
     await tx.session.deleteMany({
       where: { userId: id },
     });
@@ -397,6 +411,10 @@ export async function deleteUser(id, currentAdminId) {
     return user;
   });
 }
+
+// ============================================
+// ACTIVATE USER
+// ============================================
 
 export async function activateUser(id) {
   const existingUser = await prisma.user.findUnique({
@@ -411,17 +429,17 @@ export async function activateUser(id) {
 
   if (!existingUser) {
     const error = new Error("User not found.");
-    error.status = 404;
+    error.statusCode = 404;
     throw error;
   }
 
   if (existingUser.isActive) {
     const error = new Error("This account is already active.");
-    error.status = 400;
+    error.statusCode = 400;
     throw error;
   }
 
-  const user = await prisma.user.update({
+  return prisma.user.update({
     where: { id },
     data: {
       isActive: true,
@@ -434,6 +452,74 @@ export async function activateUser(id) {
       isActive: true,
     },
   });
+}
 
-  return user;
+// ============================================
+// RESET USER PASSWORD
+// ============================================
+
+export async function resetUserPassword({
+  id,
+  currentAdminId,
+  headers,
+}) {
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  });
+
+  if (!existingUser) {
+    const error = new Error("User not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (id === currentAdminId) {
+    const error = new Error(
+      "Use the normal password-change process for your own account."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (existingUser.role === "ADMIN") {
+    const error = new Error(
+      "ADMIN passwords cannot be reset through this endpoint."
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const temporaryPassword = randomBytes(18).toString("base64url");
+
+  await auth.api.setUserPassword({
+    body: {
+      userId: id,
+      newPassword: temporaryPassword,
+    },
+    headers,
+  });
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: {
+        mustChangePassword: true,
+      },
+    }),
+
+    prisma.session.deleteMany({
+      where: { userId: id },
+    }),
+  ]);
+
+  return {
+    user: existingUser,
+    temporaryPassword,
+  };
 }

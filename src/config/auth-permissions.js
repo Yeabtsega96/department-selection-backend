@@ -7,7 +7,7 @@ export const ac = createAccessControl(defaultStatements);
 // Define the permissions for each university role.
 export const roles = {
   ADMIN: ac.newRole({
-    user: ["create", "set-role"],
+    user: ["create", "set-role", "set-password"],
   }),
   DEAN: ac.newRole({
     user: ["create"],
