@@ -110,13 +110,28 @@ export async function getAllUsers({
   search,
   role,
   isActive,
+  excludeRole,
 }) {
   const skip = (page - 1) * limit;
 
   // Build dynamic filters
   const where = {};
+  const roleFilters = [];
+
   if (role) {
-    where.role = role;
+    roleFilters.push({ role });
+  }
+
+  if (excludeRole) {
+    roleFilters.push({
+      role: {
+        not: excludeRole,
+      },
+    });
+  }
+
+  if (roleFilters.length > 0) {
+    where.AND = roleFilters;
   }
 
   if (typeof isActive === "boolean") {
@@ -382,7 +397,6 @@ export async function deleteUser(id, currentAdminId) {
     return user;
   });
 }
-
 
 export async function activateUser(id) {
   const existingUser = await prisma.user.findUnique({

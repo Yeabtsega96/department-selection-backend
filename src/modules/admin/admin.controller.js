@@ -75,7 +75,7 @@ export async function getAllUsersController(req, res, next) {
       Math.max(1, Number.parseInt(req.query.limit, 10) || 10),
     );
 
-    const { search, role } = req.query;
+    const { search, role, excludeRole } = req.query;
 
     let isActive;
 
@@ -96,6 +96,7 @@ export async function getAllUsersController(req, res, next) {
       search: search?.trim(),
       role,
       isActive,
+      excludeRole,
     });
 
     return res.status(200).json({
