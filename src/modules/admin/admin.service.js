@@ -121,7 +121,7 @@ export async function getAllUsers({
   if (role) {
     roleFilters.push({ role });
   }
-
+  //
   if (excludeRole) {
     roleFilters.push({
       role: {
@@ -192,7 +192,7 @@ export async function getAllUsers({
       pageSize: limit,
     },
   };
-}
+} 
 
 // ADMIN: Get user by ID
 export async function getUserById(id) {
