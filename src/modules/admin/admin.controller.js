@@ -174,7 +174,7 @@ export async function activateUserController(req, res, next) {
   }
 }
 
-export async function resetPasswordController(req, res, next) {
+export async function resetUserPasswordController(req, res, next) {
   try {
     const result = await resetUserPassword({
       id: req.params.id,
