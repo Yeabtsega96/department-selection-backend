@@ -9,6 +9,7 @@ import {
   updateUser,
   deleteUser,
   activateUser,
+  resetUserPassword,
 } from "./admin.service.js";
 
 export async function getDashboard(req, res, next) {
@@ -75,7 +76,7 @@ export async function getAllUsersController(req, res, next) {
       Math.max(1, Number.parseInt(req.query.limit, 10) || 10),
     );
 
-    const { search, role } = req.query;
+    const { search, role, excludeRole } = req.query;
 
     let isActive;
 
@@ -96,6 +97,7 @@ export async function getAllUsersController(req, res, next) {
       search: search?.trim(),
       role,
       isActive,
+      excludeRole,
     });
 
     return res.status(200).json({
@@ -144,8 +146,6 @@ export async function updateUserController(req, res, next) {
   }
 }
 
-
-
 export async function deleteUserController(req, res, next) {
   try {
     const user = await deleteUser(req.params.id, req.user.id);
@@ -154,12 +154,11 @@ export async function deleteUserController(req, res, next) {
       success: true,
       message: "User deactivated successfully.",
       data: user,
-    })
+    });
   } catch (error) {
     next(error);
   }
 }
-
 
 export async function activateUserController(req, res, next) {
   try {
@@ -169,6 +168,24 @@ export async function activateUserController(req, res, next) {
       success: true,
       message: "User activated successfully.",
       data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetPasswordController(req, res, next) {
+  try {
+    const result = await resetUserPassword({
+      id: req.params.id,
+      currentAdminId: req.user.id,
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully.",
+      data: result,
     });
   } catch (error) {
     next(error);

@@ -11,6 +11,7 @@ import {
   updateUserController,
   deleteUserController,
   activateUserController,
+  resetUserPasswordController,
 } from "./admin.controller.js";
 
 const router = Router();
@@ -227,4 +228,10 @@ router.delete("/users/:id", deleteUserController);
  */
 router.patch("/users/:id/activate", activateUserController);
 
+
+
+router.post(
+  "/users/:id/reset-password",
+  resetUserPasswordController
+);
 export default router;

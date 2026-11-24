@@ -110,13 +110,28 @@ export async function getAllUsers({
   search,
   role,
   isActive,
+  excludeRole,
 }) {
   const skip = (page - 1) * limit;
 
   // Build dynamic filters
   const where = {};
+  const roleFilters = [];
+
   if (role) {
-    where.role = role;
+    roleFilters.push({ role });
+  }
+  //
+  if (excludeRole) {
+    roleFilters.push({
+      role: {
+        not: excludeRole.toUpperCase(),
+      },
+    });
+  }
+
+  if (roleFilters.length > 0) {
+    where.AND = roleFilters;
   }
 
   if (typeof isActive === "boolean") {
@@ -177,7 +192,7 @@ export async function getAllUsers({
       pageSize: limit,
     },
   };
-}
+} 
 
 // ADMIN: Get user by ID
 export async function getUserById(id) {
@@ -383,7 +398,6 @@ export async function deleteUser(id, currentAdminId) {
   });
 }
 
-
 export async function activateUser(id) {
   const existingUser = await prisma.user.findUnique({
     where: { id },
@@ -422,4 +436,76 @@ export async function activateUser(id) {
   });
 
   return user;
+}
+
+
+export async function resetUserPassword({
+  id,
+  currentAdminId,
+  headers,
+}) {
+   // Find the target user
+   const existingUser = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    }
+   });
+
+   if(!existingUser) {
+    const error = new Error("User not found.");
+    error.statusCode = 404;
+    throw error;
+   }
+
+   // Prevent resetting your own password through this endpoint
+   if(id === currentAdminId) {
+    const error = new Error("Use the normal password-change process for your own account.");
+    error.statusCode = 400;
+    throw error;
+   }
+
+   // Protect other ADMIN accounts
+  if (existingUser.role === "ADMIN") {
+    const error = new Error(
+      "ADMIN passwords cannot be reset through this endpoint."
+    );
+    error.status = 403;
+    throw error;
+  }
+
+  // Generate a temporary password
+  const tempPassword = randomBytes(18).toString("base64url");
+
+  // Let Better Auth hash and save the password
+  await auth.api.setUserPassword({
+    body: {
+      userId: id,
+      newPassword: tempPassword,
+    },
+    headers
+  });
+
+  // Require a password change and revoke existing sessions
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: {
+        mustChangePassword: true,
+      }
+    }),
+
+    await prisma.session.deleteMany({
+      where: { userId: id }
+    })
+  ]);
+
+
+  return {
+    user: existingUser,
+    temporaryPassword: tempPassword,
+  }
 }
