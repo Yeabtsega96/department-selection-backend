@@ -27,6 +27,7 @@ model User {
   // Application profile relationships
   employeeProfile EmployeeProfile?
   studentProfile  StudentProfile?
+  studentCredential StudentCredential?
 
   // Permission relationships
   permissionGrants   UserPermissionGrant[] @relation("GrantedUserPermissions")
@@ -150,6 +151,18 @@ model StudentProfile {
   @@index([studentStatus])
   @@index([enrollmentYear])
   @@map("student_profile")
+}
+
+model StudentCredential {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  encryptedPassword String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("student_credential")
 }
 
 enum Gender {

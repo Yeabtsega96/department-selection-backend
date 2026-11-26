@@ -14,7 +14,7 @@ export const roles = {
   }),
 
   COORDINATOR: ac.newRole({
-    user: [],
+    user: ["create", "set-password"],
   }),
 
   DEPARTMENT_HEAD: ac.newRole({

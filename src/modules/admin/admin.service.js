@@ -120,7 +120,9 @@ export async function getAllUsers({
   isActive,
   excludeRole,
 }) {
-  const skip = (page - 1) * limit;
+  const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+  const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+  const skip = (pageNumber - 1) * pageSize;
 
   const where = {};
   const roleFilters = [];
@@ -147,9 +149,9 @@ export async function getAllUsers({
 
   if (search) {
     where.OR = [
-      { name: { contains: search, mode: "insensitive" } },
-      { email: { contains: search, mode: "insensitive" } },
-      { username: { contains: search, mode: "insensitive" } },
+      { name: { contains: search } },
+      { email: { contains: search } },
+      { username: { contains: search } },
     ];
   }
 

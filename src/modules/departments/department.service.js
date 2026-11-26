@@ -47,12 +47,14 @@ export async function getDepartmentById(id) {
       campus: true,
       headAssignments: {
         where: {
-          status: true,
+          status: "ACTIVE",
         },
         include: {
           user: {
-            id: true,
-            name: true,
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
       },
