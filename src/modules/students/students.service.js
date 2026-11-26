@@ -201,7 +201,7 @@ export async function getStudents({
     where.gender = gender;
   }
 
-  if (studentStatus) {
+  if (studentStatus !== undefined) {
     where.studentStatus = studentStatus;
   }
 

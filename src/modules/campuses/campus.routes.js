@@ -13,6 +13,8 @@ import {
 
 const router = Router();
 
+
+
 /**
  * @swagger
  * tags:
@@ -24,12 +26,43 @@ const router = Router();
  * @swagger
  * /api/campuses:
  *   get:
- *     summary: Get all campuses
- *     description: Retrieve a list of all campuses.
+ *     summary: Get all active campuses
+ *     description: Retrieve all active campuses, including the number of departments associated with each campus.
  *     tags: [Campuses]
  *     responses:
  *       200:
  *         description: Campuses retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 2
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Campus'
+ *             example:
+ *               success: true
+ *               count: 2
+ *               data:
+ *                 - id: "campus_123"
+ *                   code: "MAIN"
+ *                   name: "Main Campus"
+ *                   isActive: true
+ *                   _count:
+ *                     departments: 12
+ *                 - id: "campus_456"
+ *                   code: "SHB"
+ *                   name: "Shambu Campus"
+ *                   isActive: true
+ *                   _count:
+ *                     departments: 5
  *       500:
  *         description: Internal server error.
  */
@@ -40,7 +73,7 @@ router.get("/", getCampusesController);
  * /api/campuses/{id}:
  *   get:
  *     summary: Get campus by ID
- *     description: Retrieve a specific campus using its ID.
+ *     description: Retrieve an active campus by its ID, including its active departments.
  *     tags: [Campuses]
  *     parameters:
  *       - in: path
@@ -52,8 +85,32 @@ router.get("/", getCampusesController);
  *     responses:
  *       200:
  *         description: Campus retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Campus'
+ *             example:
+ *               success: true
+ *               data:
+ *                 id: "campus_123"
+ *                 code: "MAIN"
+ *                 name: "Main Campus"
+ *                 isActive: true
+ *                 departments:
+ *                   - id: "dept_123"
+ *                     code: "CS"
+ *                     name: "Computer Science"
+ *                     isActive: true
  *       404:
- *         description: Campus not found.
+ *         description: Campus not found or inactive.
+ *       500:
+ *         description: Internal server error.
  */
 router.get("/:id", getCampusByIdController);
 
@@ -66,17 +123,48 @@ router.get("/:id", getCampusByIdController);
  *     tags: [Campuses]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 example: "MAIN"
+ *               name:
+ *                 type: string
+ *                 example: "Main Campus"
+ *               isActive:
+ *                 type: boolean
+ *                 example: true
+ *             required:
+ *               - code
+ *               - name
  *     responses:
  *       201:
  *         description: Campus created successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Campus created successfully."
+ *               data:
+ *                 id: "campus_123"
+ *                 code: "MAIN"
+ *                 name: "Main Campus"
+ *                 isActive: true
  *       400:
- *         description: Invalid request data.
+ *         description: Validation failed.
  *       401:
  *         description: Authentication required.
  *       403:
  *         description: Only Admins can create campuses.
  *       409:
- *         description: Campus code already exists.
+ *         description: A campus with this code already exists.
+ *       500:
+ *         description: Internal server error.
  */
 router.post(
     "/",
@@ -101,17 +189,45 @@ router.post(
  *         schema:
  *           type: string
  *         description: Campus ID.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 example: "MAIN"
+ *               name:
+ *                 type: string
+ *                 example: "Main Campus"
+ *               isActive:
+ *                 type: boolean
+ *                 example: true
  *     responses:
  *       200:
  *         description: Campus updated successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Campus updated successfully."
+ *               data:
+ *                 id: "campus_123"
+ *                 code: "MAIN"
+ *                 name: "Main Campus"
+ *                 isActive: true
  *       400:
- *         description: Invalid request data.
+ *         description: Validation failed.
  *       401:
  *         description: Authentication required.
  *       403:
  *         description: Only Admins can update campuses.
  *       404:
  *         description: Campus not found.
+ *       500:
+ *         description: Internal server error.
  */
 router.patch(
     "/:id",

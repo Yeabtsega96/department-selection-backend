@@ -15,6 +15,51 @@ import {
 
 const router = Router();
 
+
+
+
+router.get("/", getDepartmentsController);
+
+
+router.post(
+    "/",
+    requireAuth,
+    requireRole("DEAN"),
+    createDepartmentController
+);
+
+
+
+router.get(
+    "/my",
+    requireAuth,
+    requireRole("DEPARTMENT_HEAD"),
+    getMyDepartmentController
+);
+
+
+
+router.patch(
+    "/my",
+    requireAuth,
+    requireRole("DEPARTMENT_HEAD"),
+    updateDepartmentByHeadController
+);
+
+
+router.get("/:id", getDepartmentByIdController);
+
+
+router.patch(
+    "/:id",
+    requireAuth,
+    requireRole("DEAN"),
+    updateDepartmentByDeanController
+);
+
+
+
+
 /**
  * @swagger
  * tags:
@@ -26,103 +71,42 @@ const router = Router();
  * @swagger
  * /api/departments:
  *   get:
- *     summary: Get all departments
- *     description: Retrieve a list of all departments.
+ *     summary: Get all active departments
+ *     description: Public endpoint. Retrieves all active departments, including campus information and active department-head assignments.
  *     tags: [Departments]
  *     responses:
  *       200:
  *         description: Departments retrieved successfully.
- *       500:
- *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               count: 1
+ *               data:
+ *                 - id: "dept_123"
+ *                   name: "Computer Science"
+ *                   code: "CS"
+ *                   campusId: "campus_123"
+ *                   isActive: true
+ *                   campus:
+ *                     id: "campus_123"
+ *                     code: "MAIN"
+ *                     name: "Main Campus"
+ *                   headAssignments:
+ *                     - id: "assignment_123"
+ *                       assignmentType: "PRIMARY"
+ *                       startDate: "2026-01-01T00:00:00.000Z"
+ *                       user:
+ *                         id: "user_123"
+ *                         name: "Example Department Head"
  */
-router.get("/", getDepartmentsController);
-
-/**
- * @swagger
- * /api/departments:
- *   post:
- *     summary: Create a department
- *     description: Allows an authenticated Dean to create a new department.
- *     tags: [Departments]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       201:
- *         description: Department created successfully.
- *       400:
- *         description: Invalid request data.
- *       401:
- *         description: Authentication required.
- *       403:
- *         description: Only Deans can create departments.
- */
-router.post(
-    "/",
-    requireAuth,
-    requireRole("DEAN"),
-    createDepartmentController
-);
-
-/**
- * @swagger
- * /api/departments/my:
- *   get:
- *     summary: Get my department
- *     description: Retrieve the department assigned to the authenticated Department Head.
- *     tags: [Departments]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Assigned department retrieved successfully.
- *       401:
- *         description: Authentication required.
- *       403:
- *         description: Only Department Heads can access this resource.
- *       404:
- *         description: No department assigned to this user.
- */
-router.get(
-    "/my",
-    requireAuth,
-    requireRole("DEPARTMENT_HEAD"),
-    getMyDepartmentController
-);
-
-/**
- * @swagger
- * /api/departments/my:
- *   patch:
- *     summary: Update my department
- *     description: Allows a Department Head to update their assigned department.
- *     tags: [Departments]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Department updated successfully.
- *       400:
- *         description: Invalid request data.
- *       401:
- *         description: Authentication required.
- *       403:
- *         description: Only Department Heads can update their assigned department.
- *       404:
- *         description: Assigned department not found.
- */
-router.patch(
-    "/my",
-    requireAuth,
-    requireRole("DEPARTMENT_HEAD"),
-    updateDepartmentByHeadController
-);
 
 /**
  * @swagger
  * /api/departments/{id}:
  *   get:
- *     summary: Get department by ID
- *     description: Retrieve a specific department using its ID.
+ *     summary: Get an active department by ID
+ *     description: Public endpoint. Retrieves one active department, including its campus and active department-head assignments.
  *     tags: [Departments]
  *     parameters:
  *       - in: path
@@ -134,17 +118,166 @@ router.patch(
  *     responses:
  *       200:
  *         description: Department retrieved successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 id: "dept_123"
+ *                 name: "Computer Science"
+ *                 code: "CS"
+ *                 campusId: "campus_123"
+ *                 isActive: true
+ *                 campus:
+ *                   id: "campus_123"
+ *                   name: "Main Campus"
+ *                 headAssignments:
+ *                   - id: "assignment_123"
+ *                     assignmentType: "PRIMARY"
+ *                     user:
+ *                       id: "user_123"
+ *                       name: "Example Department Head"
  *       404:
- *         description: Department not found.
+ *         description: Department not found or inactive.
  */
-router.get("/:id", getDepartmentByIdController);
+
+/**
+ * @swagger
+ * /api/departments:
+ *   post:
+ *     summary: Create a department
+ *     description: Allows an authenticated DEAN to create a department.
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Computer Science
+ *               code:
+ *                 type: string
+ *                 example: CS
+ *               campusId:
+ *                 type: string
+ *                 example: campus_123
+ *           example:
+ *             name: Computer Science
+ *             code: CS
+ *             campusId: campus_123
+ *     responses:
+ *       201:
+ *         description: Department created successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: Department created successfully.
+ *               data:
+ *                 id: "dept_123"
+ *                 name: Computer Science
+ *                 code: CS
+ *                 campusId: campus_123
+ *                 isActive: true
+ *       400:
+ *         description: Validation failed.
+ *       401:
+ *         description: Authentication required.
+ *       403:
+ *         description: DEAN role required.
+ *       404:
+ *         description: Campus not found.
+ *       409:
+ *         description: Department code already exists.
+ */
+
+/**
+ * @swagger
+ * /api/departments/my:
+ *   get:
+ *     summary: Get my assigned department
+ *     description: Retrieves the active department assigned to the authenticated Department Head.
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Assigned department retrieved successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 id: "dept_123"
+ *                 name: Computer Science
+ *                 code: CS
+ *                 campus:
+ *                   id: "campus_123"
+ *                   name: Main Campus
+ *                 headAssignments:
+ *                   - id: "assignment_123"
+ *                     assignmentType: PRIMARY
+ *                     user:
+ *                       id: "user_123"
+ *                       name: Example Department Head
+ *                       username: example.head
+ *       401:
+ *         description: Authentication required.
+ *       403:
+ *         description: DEPARTMENT_HEAD role required.
+ *       404:
+ *         description: No active department assignment found.
+ */
+
+/**
+ * @swagger
+ * /api/departments/my:
+ *   patch:
+ *     summary: Update my assigned department
+ *     description: Allows a Department Head to update information for their active assigned department.
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Fields accepted by the Department Head update validator.
+ *           example:
+ *             name: Computer Science
+ *     responses:
+ *       200:
+ *         description: Department information updated successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: Department information updated successfully.
+ *               data:
+ *                 id: "dept_123"
+ *                 name: Computer Science
+ *                 code: CS
+ *       400:
+ *         description: Validation failed.
+ *       401:
+ *         description: Authentication required.
+ *       403:
+ *         description: DEPARTMENT_HEAD role required or no active assignment.
+ */
 
 /**
  * @swagger
  * /api/departments/{id}:
  *   patch:
  *     summary: Update a department
- *     description: Allows an authenticated Dean to update any department.
+ *     description: Allows an authenticated DEAN to update a department by ID.
  *     tags: [Departments]
  *     security:
  *       - bearerAuth: []
@@ -155,23 +288,40 @@ router.get("/:id", getDepartmentByIdController);
  *         schema:
  *           type: string
  *         description: Department ID.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Fields accepted by the Dean update validator.
+ *           example:
+ *             name: Computer Science
+ *             code: CS
+ *             campusId: campus_123
  *     responses:
  *       200:
  *         description: Department updated successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: Department updated successfully.
+ *               data:
+ *                 id: "dept_123"
+ *                 name: Computer Science
+ *                 code: CS
+ *                 campusId: campus_123
  *       400:
- *         description: Invalid request data.
+ *         description: Validation failed.
  *       401:
  *         description: Authentication required.
  *       403:
- *         description: Only Deans can update departments.
+ *         description: DEAN role required.
  *       404:
- *         description: Department not found.
+ *         description: Department or campus not found.
+ *       409:
+ *         description: Department code already exists.
  */
-router.patch(
-    "/:id",
-    requireAuth,
-    requireRole("DEAN"),
-    updateDepartmentByDeanController
-);
 
 export default router;

@@ -55,7 +55,7 @@ export async function getStudentsController(req, res, next) {
       if (!["true", "false"].includes(req.query.studentStatus)) {
         return res.status(400).json({
           success: false,
-          message: "isActive must be true or false.",
+          message: "studentStatus must be true or false.",
         });
       }
 
@@ -135,25 +135,30 @@ export async function updateStudentController(req, res, next) {
 
 
 export async function updateStudentStatusController(req, res, next) {
-    try {
-        const { universityStudentId } = req.params;
-        const { isActive  } = req.body;
+  try {
+    const { universityStudentId } = req.params;
+    const { isActive } = req.body;
 
-        if(typeof isActive !== "boolean") {
-            return res.status(400).json({
-                success: false,
-                message: "isActive must be a boolean."
-            });
-        }
-
-        const result = await updateStudent(universityStudentId, isActive);
-
-        res.status(200).json({
-            success: true,
-            message: `Student account ${isActive ? "activated" : "deactivated"} successfully.`,
-            data: result,
-        })
-    } catch (error) {
-        next(error);
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean.",
+      });
     }
+
+    const result = await updateStudentStatus(
+      universityStudentId,
+      isActive,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Student account ${
+        isActive ? "activated" : "deactivated"
+      } successfully.`,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
 }
