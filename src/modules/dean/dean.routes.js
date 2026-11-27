@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { requireRole } from "../../middleware/role.middleware.js";
@@ -6,22 +5,13 @@ import { requireRole } from "../../middleware/role.middleware.js";
 import {
   createDepartmentHeadController,
   createDepartmentHeadAssignmentController,
+  getDepartmentHeadsController,
+  getDepartmentHeadByIdController,
 } from "./dean.controller.js";
-
 const router = Router();
 
 // All Dean routes require DEAN authentication
 router.use(requireAuth, requireRole("DEAN"));
-
-
-router.post("/department-heads", createDepartmentHeadController);
-
-
-router.post(
-  "/department-head-assignments",
-  createDepartmentHeadAssignmentController
-);
-
 
 /**
  * @swagger
@@ -29,6 +19,130 @@ router.post(
  *   name: Dean
  *   description: Dean account and department-head assignment management
  */
+
+/**
+ * @swagger
+ * /api/dean/department-heads:
+ *   get:
+ *     summary: Get all Department Heads
+ *     description: Retrieve Department Heads with pagination and optional filtering.
+ *     tags: [Dean]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of Department Heads per page.
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search Department Heads by name, email, or employee ID, if supported by the service.
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVE, ENDED]
+ *         description: Filter assignments by assignment status, if supported by the service.
+ *     responses:
+ *       200:
+ *         description: Department Heads retrieved successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 - id: "assignment_123"
+ *                   departmentId: "dept_123"
+ *                   userId: "user_123"
+ *                   assignmentType: PRIMARY
+ *                   status: ACTIVE
+ *                   startDate: "2026-11-26T00:00:00.000Z"
+ *                   department:
+ *                     id: "dept_123"
+ *                     name: "Computer Science"
+ *                   user:
+ *                     id: "user_123"
+ *                     name: "Abebe Kebede"
+ *                     email: "abebe@university.edu.et"
+ *                     username: "abebekebede"
+ *                     isActive: true
+ *               pagination:
+ *                 total: 1
+ *                 page: 1
+ *                 limit: 10
+ *                 totalPages: 1
+ *       401:
+ *         description: Authentication required.
+ *       403:
+ *         description: DEAN role required.
+ *       500:
+ *         description: Internal server error.
+ */
+router.get("/department-heads", getDepartmentHeadsController);
+
+/**
+ * @swagger
+ * /api/dean/department-heads/{id}:
+ *   get:
+ *     summary: Get Department Head by ID
+ *     description: Retrieve detailed information about a Department Head assignment using its assignment ID.
+ *     tags: [Dean]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Department Head assignment ID.
+ *         example: "assignment_123"
+ *     responses:
+ *       200:
+ *         description: Department Head retrieved successfully.
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 id: "assignment_123"
+ *                 departmentId: "dept_123"
+ *                 userId: "user_123"
+ *                 assignmentType: PRIMARY
+ *                 status: ACTIVE
+ *                 startDate: "2026-11-26T00:00:00.000Z"
+ *                 department:
+ *                   id: "dept_123"
+ *                   name: "Computer Science"
+ *                 user:
+ *                   id: "user_123"
+ *                   name: "Abebe Kebede"
+ *                   email: "abebe@university.edu.et"
+ *                   username: "abebekebede"
+ *                   isActive: true
+ *       401:
+ *         description: Authentication required.
+ *       403:
+ *         description: DEAN role required.
+ *       404:
+ *         description: Department Head assignment not found.
+ *       500:
+ *         description: Internal server error.
+ */
+router.get("/department-heads/:id", getDepartmentHeadByIdController);
 
 /**
  * @swagger
@@ -48,25 +162,25 @@ router.post(
  *         application/json:
  *           schema:
  *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: Abebe Kebede
- *               email:
- *                 type: string
- *                 format: email
- *                 example: abebe@university.edu.et
- *               employeeId:
- *                 type: string
- *                 example: EMP-2026-001
  *             required:
  *               - name
  *               - email
  *               - employeeId
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Abebe Kebede"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "abebe@university.edu.et"
+ *               employeeId:
+ *                 type: string
+ *                 example: "EMP-2026-001"
  *           example:
- *             name: Abebe Kebede
- *             email: abebe@university.edu.et
- *             employeeId: EMP-2026-001
+ *             name: "Abebe Kebede"
+ *             email: "abebe@university.edu.et"
+ *             employeeId: "EMP-2026-001"
  *     responses:
  *       201:
  *         description: Department Head account created successfully.
@@ -74,32 +188,28 @@ router.post(
  *           application/json:
  *             example:
  *               success: true
- *               message: Department Head account created successfully.
+ *               message: "Department Head account created successfully."
  *               data:
  *                 user:
  *                   id: "user_123"
- *                   name: Abebe Kebede
- *                   email: abebe@university.edu.et
- *                   username: abebekebedea1b2c3
+ *                   name: "Abebe Kebede"
+ *                   email: "abebe@university.edu.et"
+ *                   username: "abebekebedea1b2c3"
  *                   role: DEPARTMENT_HEAD
  *                   isActive: true
  *                 temporaryPassword: "generated-temporary-password"
  *       400:
  *         description: Validation failed.
- *         content:
- *           application/json:
- *             example:
- *               success: false
- *               message: Validation failed.
- *               errors:
- *                 - "name is required."
  *       401:
  *         description: Authentication required.
  *       403:
- *         description: Only users with the DEAN role can create Department Heads.
+ *         description: DEAN role required.
  *       409:
  *         description: Email or username already exists.
+ *       500:
+ *         description: Internal server error.
  */
+router.post("/department-heads", createDepartmentHeadController);
 
 /**
  * @swagger
@@ -107,9 +217,9 @@ router.post(
  *   post:
  *     summary: Assign a Department Head to a department
  *     description: |
- *       Allows an authenticated Dean to assign an existing Department Head
- *       to a department. The selected user must have the DEPARTMENT_HEAD role
- *       and an active account. A department can have only one active PRIMARY assignment.
+ *       Allows a Dean to assign an existing Department Head to a department.
+ *       The selected user must have the DEPARTMENT_HEAD role and an active account.
+ *       A department can have only one active PRIMARY assignment.
  *     tags: [Dean]
  *     security:
  *       - bearerAuth: []
@@ -119,6 +229,11 @@ router.post(
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - departmentId
+ *               - userId
+ *               - assignmentType
+ *               - startDate
  *             properties:
  *               departmentId:
  *                 type: string
@@ -134,11 +249,6 @@ router.post(
  *                 type: string
  *                 format: date-time
  *                 example: "2026-11-26T00:00:00.000Z"
- *             required:
- *               - departmentId
- *               - userId
- *               - assignmentType
- *               - startDate
  *           example:
  *             departmentId: "dept_123"
  *             userId: "user_123"
@@ -151,7 +261,7 @@ router.post(
  *           application/json:
  *             example:
  *               success: true
- *               message: Department Head assigned successfully.
+ *               message: "Department Head assigned successfully."
  *               data:
  *                 id: "assignment_123"
  *                 departmentId: "dept_123"
@@ -161,19 +271,19 @@ router.post(
  *                 startDate: "2026-11-26T00:00:00.000Z"
  *                 status: ACTIVE
  *       400:
- *         description: Invalid assignment, inactive account, incorrect role, or existing active PRIMARY assignment.
- *         content:
- *           application/json:
- *             example:
- *               success: false
- *               message: This department already has an active PRIMARY Department Head.
+ *         description: Invalid assignment or another active PRIMARY assignment exists.
  *       401:
  *         description: Authentication required.
  *       403:
- *         description: Only users with the DEAN role can create assignments.
+ *         description: DEAN role required.
  *       404:
  *         description: Department or Department Head user not found.
+ *       500:
+ *         description: Internal server error.
  */
-
+router.post(
+  "/department-head-assignments",
+  createDepartmentHeadAssignmentController
+);
 
 export default router;

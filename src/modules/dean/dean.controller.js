@@ -1,7 +1,14 @@
 import { fromNodeHeaders } from "better-auth/node";
 import { validateCreateDepartmentHead } from "./dean.validation.js";
-import { createDepartmentHead, createDepartmentHeadAssignment } from "./dean.service.js";
+import { 
+  createDepartmentHead, 
+  createDepartmentHeadAssignment, 
+  getDepartmentHeads,
+  getDepartmentHeadById,
+} from "./dean.service.js";
 import { validateCreateAssignment } from "./department-head-assignment.validation.js"
+
+
 
 export async function createDepartmentHeadController(req, res, next) {
   // 1. Validate request body
@@ -70,4 +77,47 @@ export async function createDepartmentHeadAssignmentController(req, res, next) {
   } catch (error) {
     next(error);
   }
+}
+
+
+
+export async function getDepartmentHeadsController(req, res, next) {
+  try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+
+    const limit = Math.min(
+      100,
+      Math.max(1, Number.parseInt(req.query.limit, 10) || 10),
+    );
+
+    const { status } = req.query;
+    const departmentHeads = await getDepartmentHeads({
+      page,
+      limit,
+      status,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: departmentHeads,
+    })
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+export async function getDepartmentHeadByIdController(req, res, next) {
+  try {
+    const departmentHead = await getDepartmentHeadById(req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      data: departmentHead,
+    })
+  } catch (error) {
+    next(error);
+  }
+
+
 }
