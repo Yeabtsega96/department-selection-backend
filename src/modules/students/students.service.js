@@ -67,7 +67,7 @@ export async function createStudent({ data, headers }) {
       .slice(0, 12)
       .replace(/^\.|\.$/g, "") || "student";
 
-  const email = `${emailBase}.${randomBytes(4).toString("hex")}@wollega.university.com`;
+  const email = `${emailBase}.${randomBytes(8).toString("hex")}@wollega.university.com`;
 
   // 6. Generate temporary password
   const temporaryPassword = randomBytes(4).toString("base64url");
@@ -85,7 +85,6 @@ export async function createStudent({ data, headers }) {
         name: normalizedName,
         email,
         password: temporaryPassword,
-        role: "STUDENT",
         data: {
           username: normalizedStudentId,
           isActive: true,
