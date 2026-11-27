@@ -70,8 +70,8 @@ export async function createStudent({ data, headers }) {
   const email = `${emailBase}.${randomBytes(8).toString("hex")}@wollega.university.com`;
 
   // 6. Generate temporary password
-  const temporaryPassword = randomBytes(4).toString("base64url");
-
+  const temporaryPassword = randomBytes(8).toString("base64url");
+       
   // 7. Encrypt temporary password
   const encryptedPassword = encryptCredential(temporaryPassword);
 
