@@ -85,6 +85,7 @@ export async function createStudent({ data, headers }) {
         name: normalizedName,
         email,
         password: temporaryPassword,
+        role: "STUDENT",
         data: {
           username: normalizedStudentId,
           isActive: true,
