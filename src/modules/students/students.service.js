@@ -7,7 +7,7 @@ import {
   decryptCredential,
 } from "../../utils/credential-encryption.js";
 
-export async function createStudent({ data, headers }) {
+export async function createStudent({ data }) {
   const { name, universityStudentId, gender, regionId, enrollmentYear } = data;
 
   // 1. Normalize input
@@ -91,8 +91,7 @@ export async function createStudent({ data, headers }) {
           isActive: true,
           mustChangePassword: true,
         },
-      },
-      headers,
+      }
     });
 
     const createdUser = result.user ?? result;
