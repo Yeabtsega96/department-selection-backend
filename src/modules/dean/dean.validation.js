@@ -28,6 +28,7 @@ export function validateCreateDepartmentHead(body) {
     data: {
       name: name.trim(),
       email: email.trim().toLowerCase(),
+      employeeId: employeeId.trim(),
     },
   };
 }

@@ -6,6 +6,12 @@ import prisma from "../../config/prisma.js";
 export async function createDepartmentHead({ data, headers }) {
   const { name, email, employeeId } = data;
 
+  if (!employeeId || !String(employeeId).trim()) {
+    const error = new Error("Employee ID is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
   // Generate a unique username
   const usernameBase =
     name
@@ -142,20 +148,27 @@ export async function createDepartmentHeadAssignment({ data, assignedBy }) {
 export async function getDepartmentHeads({
   page = 1,
   limit = 10,
-  status,
+  isActive,
 } = {}) {
   const pageNumber = Math.max(1, parseInt(page, 10) || 1);
   const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
   const skip = (pageNumber - 1) * pageSize;
 
-  const where = {};
+  const where = {
+    role: "DEPARTMENT_HEAD",
+  };
 
-  if (status && ["ACTIVE", "ENDED"].includes(status.toUpperCase())) {
-    where.status = status.toUpperCase();
+  // Handle both boolean (true/false) and query string ("true"/"false")
+  if (isActive !== undefined && isActive !== "") {
+    if (isActive === true || String(isActive).toLowerCase() === "true") {
+      where.isActive = true;
+    } else if (isActive === false || String(isActive).toLowerCase() === "false") {
+      where.isActive = false;
+    }
   }
 
   const [departmentHeads, total] = await prisma.$transaction([
-    prisma.departmentHeadAssignment.findMany({
+    prisma.user.findMany({
       where,
       skip,
       take: pageSize,
@@ -164,24 +177,35 @@ export async function getDepartmentHeads({
       },
       select: {
         id: true,
-        assignmentType: true,
-        status: true,
-        department: {
+        name: true,
+        email: true,
+        username: true,
+        isActive: true,
+        createdAt: true,
+        employeeProfile: {
           select: {
             id: true,
-            name: true,
+            employeeId: true,
           },
         },
-        user: {
+        departmentHeadAssignments: {
+          where: { status: "ACTIVE" },
           select: {
             id: true,
-            name: true,
+            assignmentType: true,
+            status: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     }),
 
-    prisma.departmentHeadAssignment.count({ where }),
+    prisma.user.count({ where }),
   ]);
 
   return {
@@ -194,6 +218,7 @@ export async function getDepartmentHeads({
     },
   };
 }
+
 
 export async function getDepartmentHeadById(id) {
   const departmentHead = await prisma.departmentHeadAssignment.findUnique({
